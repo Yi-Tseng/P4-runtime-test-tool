@@ -1,0 +1,165 @@
+{
+  "s1": {
+    "addr": "127.0.0.1:50051",
+    "flows": [
+      {
+        "table_name": "filtering.ingress_port_vlan",
+        "match_fields": {
+          "standard_metadata.ingress_port": 1,
+          "hdr.vlan_tag.is_valid": 0,
+          "hdr.vlan_tag.vlan_id": [0, 0]
+        },
+        "action_name": "push_internal_vlan",
+        "action_params": {
+          "new_vlan_id": 10
+        }
+      },
+      {
+        "table_name": "filtering.ingress_port_vlan",
+        "match_fields": {
+          "standard_metadata.ingress_port": 2,
+          "hdr.vlan_tag.is_valid": 0,
+          "hdr.vlan_tag.vlan_id": [0, 0]
+        },
+        "action_name": "push_internal_vlan",
+        "action_params": {
+          "new_vlan_id": 10
+        }
+      },
+      {
+        "table_name": "filtering.fwd_classifier",
+        "match_fields": {
+          "standard_metadata.ingress_port": 1,
+          "hdr.ethernet.dst_addr": "00:00:00:00:AA:01",
+          "hdr.ethernet.ether_type": 34887
+        },
+        "action_name": "set_forwarding_type",
+        "action_params": {
+          "fwd_type": 1
+        }
+      },
+      {
+        "table_name": "filtering.fwd_classifier",
+        "match_fields": {
+          "standard_metadata.ingress_port": 2,
+          "hdr.ethernet.dst_addr": "00:00:00:00:AA:01",
+          "hdr.ethernet.ether_type": 34887
+        },
+        "action_name": "set_forwarding_type",
+        "action_params": {
+          "fwd_type": 1
+        }
+      },
+      {
+        "table_name": "filtering.fwd_classifier",
+        "match_fields": {
+          "standard_metadata.ingress_port": 1,
+          "hdr.ethernet.dst_addr": "00:00:00:00:AA:01",
+          "hdr.ethernet.ether_type": 2048
+        },
+        "action_name": "set_forwarding_type",
+        "action_params": {
+          "fwd_type": 2
+        }
+      },
+      {
+        "table_name": "filtering.fwd_classifier",
+        "match_fields": {
+          "standard_metadata.ingress_port": 2,
+          "hdr.ethernet.dst_addr": "00:00:00:00:AA:01",
+          "hdr.ethernet.ether_type": 2048
+        },
+        "action_name": "set_forwarding_type",
+        "action_params": {
+          "fwd_type": 2
+        }
+      },
+      {
+        "table_name": "filtering.fwd_classifier",
+        "match_fields": {
+          "standard_metadata.ingress_port": 1,
+          "hdr.ethernet.dst_addr": "00:00:00:00:AA:01",
+          "hdr.ethernet.ether_type": 34525
+        },
+        "action_name": "set_forwarding_type",
+        "action_params": {
+          "fwd_type": 4
+        }
+      },
+      {
+        "table_name": "filtering.fwd_classifier",
+        "match_fields": {
+          "standard_metadata.ingress_port": 2,
+          "hdr.ethernet.dst_addr": "00:00:00:00:AA:01",
+          "hdr.ethernet.ether_type": 34525
+        },
+        "action_name": "set_forwarding_type",
+        "action_params": {
+          "fwd_type": 4
+        }
+      },
+      {
+        "table_name": "forwarding.bridging",
+        "match_fields": {
+          "hdr.vlan_tag.vlan_id": 10,
+          "hdr.ethernet.dst_addr": "00:00:00:00:00:01"
+        },
+        "action_name": "set_next_id",
+        "action_params": {
+          "next_id": 3
+        }
+      },
+      {
+        "table_name": "forwarding.bridging",
+        "match_fields": {
+          "hdr.vlan_tag.vlan_id": 10,
+          "hdr.ethernet.dst_addr": "00:00:00:00:00:02"
+        },
+        "action_name": "set_next_id",
+        "action_params": {
+          "next_id": 1
+        }
+      },
+      {
+        "table_name": "next.next_id_mapping",
+        "match_fields": {
+          "fabric_metadata.next_id": 3
+        },
+        "action_name": "set_next_type",
+        "action_params": {
+          "next_id": 0
+        }
+      },
+      {
+        "table_name": "next.next_id_mapping",
+        "match_fields": {
+          "fabric_metadata.next_id": 1
+        },
+        "action_name": "set_next_type",
+        "action_params": {
+          "next_id": 0
+        }
+      },
+      {
+        "table_name": "next.simple",
+        "match_fields": {
+          "fabric_metadata.next_id": 1
+        },
+        "action_name": "output",
+        "action_params": {
+          "port_num": 2
+        }
+      },
+      {
+        "table_name": "next.simple",
+        "match_fields": {
+          "fabric_metadata.next_id": 3
+        },
+        "action_name": "output",
+        "action_params": {
+          "port_num": 1
+        }
+      }
+    ]
+  }
+}
