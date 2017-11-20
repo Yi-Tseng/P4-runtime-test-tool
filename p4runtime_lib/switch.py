@@ -16,12 +16,9 @@ from abc import abstractmethod
 
 from Queue import Queue
 import grpc
+import p4
 from p4 import p4runtime_pb2
 from p4.tmp import p4config_pb2
-
-DEFAULT_ELECT_ID = p4runtime_pb2.Uint128()
-DEFAULT_ELECT_ID.high = 0
-DEFAULT_ELECT_ID.low = 1
 
 class IterableQueue(Queue):
 
@@ -62,13 +59,9 @@ class SwitchConnection(object):
     def SetForwardingPipelineConfig(self, p4info, dry_run=False, **kwargs):
         device_config = self.buildDeviceConfig(**kwargs)
         request = p4runtime_pb2.SetForwardingPipelineConfigRequest()
+        request.election_id.low = 1
         config = request.configs.add()
         config.device_id = self.device_id
-        print "A ", config.p4info.__class__
-        print "B ", p4info.__class__
-
-        print isinstance(p4info, config.p4info.__class__)
-        print isinstance(config.p4info, p4info.__class__)
 
         config.p4info.CopyFrom(p4info)
         config.p4_device_config = device_config.SerializeToString()
@@ -81,6 +74,7 @@ class SwitchConnection(object):
     def WriteTableEntry(self, table_entry, dry_run=False):
         request = p4runtime_pb2.WriteRequest()
         request.device_id = self.device_id
+        request.election_id.low = 1
         update = request.updates.add()
         update.type = p4runtime_pb2.Update.INSERT
         update.entity.table_entry.CopyFrom(table_entry)

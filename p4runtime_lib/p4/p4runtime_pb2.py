@@ -3,7 +3,7 @@
 
 import os
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 _b=sys.version_info[0]<3 and (lambda x:x) or (lambda x:x.encode('latin1'))
 from google.protobuf import descriptor as _descriptor
@@ -17,8 +17,8 @@ _sym_db = _symbol_database.Default()
 
 
 from google.protobuf import any_pb2 as google_dot_protobuf_dot_any__pb2
-from google_local.rpc import status_pb2 as google_dot_rpc_dot_status__pb2
-from p4.config import p4info_pb2 as p4_dot_config_dot_p4info__pb2
+from google_p4.rpc import status_pb2 as google_dot_rpc_dot_status__pb2
+from config import p4info_pb2 as p4_dot_config_dot_p4info__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
