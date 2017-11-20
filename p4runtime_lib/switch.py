@@ -46,6 +46,9 @@ class SwitchConnection(object):
     def buildDeviceConfig(self, **kwargs):
         return p4config_pb2.P4DeviceConfig()
 
+    def shutdown(self):
+        self.stream_msg_resp.cancel()
+
     def MasterArbitrationUpdate(self, dry_run=False, **kwargs):
         request = p4runtime_pb2.StreamMessageRequest()
         request.arbitration.device_id = self.device_id

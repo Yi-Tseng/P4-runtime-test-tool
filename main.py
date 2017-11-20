@@ -1,8 +1,12 @@
 #!/usr/bin/env python2
-import argparse
-import sys
 import os
+import sys
 import json
+import time
+import argparse
+
+import p4runtime_lib.bmv2
+import p4runtime_lib.helper
 
 # object hook for josn library, use str instead of unicode object
 # https://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-of-unicode-from-json
@@ -35,20 +39,17 @@ def _byteify(data, ignore_dicts = False):
     # if it's anything else, return it in its original form
     return data
 
-from time import sleep
-
-import p4runtime_lib.bmv2
-import p4runtime_lib.helper
 
 
-def flow_str(flow):
+
+def flowStr(flow):
     matches = [str(flow['match_fields'][match_name]) for match_name in flow['match_fields']]
     matches = ' '.join(matches)
     params = [str(flow['action_params'][param_name]) for param_name in flow['action_params']]
     params = ' '.join(params)
     return "%s %s %s => %s" % (flow['table_name'], flow['action_name'], matches, params)
 
-def install_flow(sw, flow, p4info_helper):
+def installFlow(sw, flow, p4info_helper):
     table_name = flow['table_name']
     match_fields = flow['match_fields']
     action_name = flow['action_name']
@@ -107,12 +108,12 @@ def main(p4info_file_path, bmv2_file_path, test_json_path):
         sw.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
                                        bmv2_json_file_path=bmv2_file_path)
         print "Installed P4 Program using SetForwardingPipelineConfig on %s" % sw.name
-        print "Installing flows to %s", sw_name
+        print "Installing flows to %s" % sw_name
 
         flows = sw_info['flows']
         for flow in flows:
-            print "Installing flow %s" % flow_str(flow)
-            install_flow(sw, flow, p4info_helper)
+            print "Installing flow %s" % flowStr(flow)
+            installFlow(sw, flow, p4info_helper)
             print "Installed"
 
     try:
@@ -121,22 +122,25 @@ def main(p4info_file_path, bmv2_file_path, test_json_path):
             for sw_name in sws:
                 sw = sws[sw_name]
                 readTableRules(p4info_helper, sw)
-            sleep(5)
+            time.sleep(5)
     except KeyboardInterrupt:
         print " Shutting down."
+        for sw_name in sws:
+            sw = sws[sw_name]
+            sw.shutdown()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='P4Runtime Controller')
     parser.add_argument('--p4info', help='p4info proto in text format from p4c',
                         type=str, action="store", required=False,
-                        default='./fabric.p4info')
+                        default='./target_p4_config/fabric.p4info')
     parser.add_argument('--bmv2-json', help='BMv2 JSON file from p4c',
                         type=str, action="store", required=False,
-                        default='./fabric.json')
+                        default='./target_p4_config/fabric.json')
     parser.add_argument('--test-json', help='Test flow entries',
                         type=str, action="store", required=False,
-                        default='./fabric-l2-unicast.json')
+                        default='./test_cases/fabric-l2-unicast.json')
     args = parser.parse_args()
 
     if not os.path.exists(args.p4info):
