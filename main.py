@@ -131,7 +131,7 @@ def main(p4info_file_path, bmv2_file_path, test_json_path):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='P4Runtime Controller')
+    parser = argparse.ArgumentParser(description='P4Runtime Test Tool')
     parser.add_argument('--p4info', help='p4info proto in text format from p4c',
                         type=str, action="store", required=False,
                         default='./target_p4_config/fabric.p4info')
