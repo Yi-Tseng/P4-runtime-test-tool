@@ -121,26 +121,6 @@
         }
       },
       {
-        "table_name": "next.next_id_mapping",
-        "match_fields": {
-          "fabric_metadata.next_id": 3
-        },
-        "action_name": "next.set_next_type",
-        "action_params": {
-          "next_type": 0
-        }
-      },
-      {
-        "table_name": "next.next_id_mapping",
-        "match_fields": {
-          "fabric_metadata.next_id": 1
-        },
-        "action_name": "next.set_next_type",
-        "action_params": {
-          "next_type": 0
-        }
-      },
-      {
         "table_name": "next.simple",
         "match_fields": {
           "fabric_metadata.next_id": 1

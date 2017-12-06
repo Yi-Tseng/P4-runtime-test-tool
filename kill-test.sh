@@ -1,4 +1,3 @@
-
 #!/bin/bash
 THE_PROGRAM="main.py"
 
