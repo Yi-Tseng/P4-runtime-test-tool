@@ -88,7 +88,7 @@ def readTableRules(p4info_helper, sw):
                 print '%r' % p.value,
             print
 
-def bmv2_test(parser, p4info_file_path, bmv2_file_path, test_json_path):
+def bmv2_test(parser, p4info_file_path, bmv2_file_path, test_json_path, proto_dump_file=None):
 
     if not os.path.exists(p4info_file_path):
         parser.print_help()
@@ -117,7 +117,7 @@ def bmv2_test(parser, p4info_file_path, bmv2_file_path, test_json_path):
         sw_info = switches_info[sw_name]
         sw_addr = sw_info['addr']
 
-        sw = p4runtime_lib.bmv2.Bmv2SwitchConnection(sw_name, address=sw_addr)
+        sw = p4runtime_lib.bmv2.Bmv2SwitchConnection(sw_name, address=sw_addr, proto_dump_file=proto_dump_file)
         sws[sw_name] = sw
         sw.MasterArbitrationUpdate()
         sw.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
@@ -144,7 +144,7 @@ def bmv2_test(parser, p4info_file_path, bmv2_file_path, test_json_path):
             sw = sws[sw_name]
             sw.shutdown()
 
-def tofino_test(parser, p4info_file_path, tofino_bin_path, cxt_json_path, test_json_path):
+def tofino_test(parser, p4info_file_path, tofino_bin_path, cxt_json_path, test_json_path, proto_dump_file=None):
     # Instantiate a P4 Runtime helper from the p4info file
     p4info_helper = p4runtime_lib.helper.P4InfoHelper(p4info_file_path)
 
@@ -159,7 +159,7 @@ def tofino_test(parser, p4info_file_path, tofino_bin_path, cxt_json_path, test_j
         sw_info = switches_info[sw_name]
         sw_addr = sw_info['addr']
 
-        sw = p4runtime_lib.tofino.TofinoSwitchConnection(sw_name, address=sw_addr)
+        sw = p4runtime_lib.tofino.TofinoSwitchConnection(sw_name, address=sw_addr, proto_dump_file=proto_dump_file)
         sws[sw_name] = sw
         sw.MasterArbitrationUpdate()
         sw.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
@@ -210,13 +210,20 @@ if __name__ == '__main__':
                         default='')
     parser.add_argument('--test-json', help='Test flow entries',
                         type=str, action="store", required=False,
-                        default='./test_cases/fabric-l2-unicast.json')
+                        default='entries.json')
+    parser.add_argument('--proto-dump-file', help='File where to dump P4Runtime entries',
+                        type=str, action="store", required=False,
+                        default='entries.txt')
 
     args = parser.parse_args()
 
+    if args.proto_dump_file is not None:
+        with open(args.proto_dump_file, 'w') as f:
+            f.write("")
+
     if (args.target == 'bmv2'):
-        bmv2_test(parser, args.p4info, args.bmv2_json, args.test_json)
+        bmv2_test(parser, args.p4info, args.bmv2_json, args.test_json, args.proto_dump_file)
 
     if (args.target == 'tofino'):
         tofino_test(parser, args.p4info, args.tofino_bin, args.tofino_ctx_json,
-                    args.test_json)
+                    args.test_json, args.proto_dump_file)
