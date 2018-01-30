@@ -32,7 +32,7 @@ class IterableQueue(Queue):
 
 
 class SwitchConnection(object):
-    def __init__(self, name, address='127.0.0.1:50051', device_id=0):
+    def __init__(self, name, address='127.0.0.1:50051', device_id=1, proto_dump_file=None):
         self.name = name
         self.address = address
         self.device_id = device_id
@@ -41,6 +41,7 @@ class SwitchConnection(object):
         self.client_stub = p4runtime_pb2.P4RuntimeStub(self.channel)
         self.requests_stream = IterableQueue()
         self.stream_msg_resp = self.client_stub.StreamChannel(iter(self.requests_stream))
+        self.proto_dump_file = proto_dump_file
 
     @abstractmethod
     def buildDeviceConfig(self, **kwargs):
@@ -83,6 +84,9 @@ class SwitchConnection(object):
         update = request.updates.add()
         update.type = p4runtime_pb2.Update.INSERT
         update.entity.table_entry.CopyFrom(table_entry)
+        if self.proto_dump_file is not None:
+            with open(self.proto_dump_file, 'a') as f:
+                f.write("%s" % update.entity)
         if dry_run:
             print "P4 Runtime Write:", request
         else:
