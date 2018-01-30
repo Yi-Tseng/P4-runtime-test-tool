@@ -164,9 +164,14 @@ class P4InfoHelper(object):
                         table_name,
                         match_fields={},
                         action_name=None,
-                        action_params={}):
+                        action_params={},
+                        priority=None):
         table_entry = p4runtime_pb2.TableEntry()
         table_entry.table_id = self.get_tables_id(table_name)
+
+        if priority is not None:
+            table_entry.priority = priority
+
         if match_fields:
             table_entry.match.extend([
                 self.get_match_field_pb(table_name, match_field_name, value)

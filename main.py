@@ -6,6 +6,7 @@ import time
 import argparse
 
 import p4runtime_lib.bmv2
+import p4runtime_lib.tofino
 import p4runtime_lib.helper
 
 # object hook for josn library, use str instead of unicode object
@@ -39,9 +40,6 @@ def _byteify(data, ignore_dicts = False):
     # if it's anything else, return it in its original form
     return data
 
-
-
-
 def flowStr(flow):
     matches = [str(flow['match_fields'][match_name]) for match_name in flow['match_fields']]
     matches = ' '.join(matches)
@@ -54,12 +52,15 @@ def installFlow(sw, flow, p4info_helper):
     match_fields = flow['match_fields']
     action_name = flow['action_name']
     action_params = flow['action_params']
+    priority = flow.get('priority') # None if not exists
 
     table_entry = p4info_helper.buildTableEntry(
         table_name=table_name,
         match_fields=match_fields,
         action_name=action_name,
-        action_params=action_params)
+        action_params=action_params,
+        priority=priority)
+
     sw.WriteTableEntry(table_entry)
 
 def readTableRules(p4info_helper, sw):
@@ -87,7 +88,21 @@ def readTableRules(p4info_helper, sw):
                 print '%r' % p.value,
             print
 
-def main(p4info_file_path, bmv2_file_path, test_json_path):
+def bmv2_test(parser, p4info_file_path, bmv2_file_path, test_json_path):
+
+    if not os.path.exists(p4info_file_path):
+        parser.print_help()
+        print "\np4info file not found: %s\nHave you run 'make'?" % p4info_file_path
+        parser.exit(1)
+    if not os.path.exists(bmv2_file_path):
+        parser.print_help()
+        print "\nBMv2 JSON file not found: %s\nHave you run 'make'?" % bmv2_file_path
+        parser.exit(1)
+    if not os.path.exists(test_json_path):
+        parser.print_help()
+        print "\nTest JSON file not found: %s" % test_json_path
+        parser.exit(1)
+
     # Instantiate a P4 Runtime helper from the p4info file
     p4info_helper = p4runtime_lib.helper.P4InfoHelper(p4info_file_path)
 
@@ -129,31 +144,79 @@ def main(p4info_file_path, bmv2_file_path, test_json_path):
             sw = sws[sw_name]
             sw.shutdown()
 
+def tofino_test(parser, p4info_file_path, tofino_bin_path, cxt_json_path, test_json_path):
+    # Instantiate a P4 Runtime helper from the p4info file
+    p4info_helper = p4runtime_lib.helper.P4InfoHelper(p4info_file_path)
+
+    switches_info = {}
+    with open(test_json_path, 'r') as test_json:
+        switches_info = json_load_byteified(test_json)
+
+    print "Installing flows from %s" % (test_json_path)
+    sws = {}
+
+    for sw_name in switches_info:
+        sw_info = switches_info[sw_name]
+        sw_addr = sw_info['addr']
+
+        sw = p4runtime_lib.tofino.TofinoSwitchConnection(sw_name, address=sw_addr)
+        sws[sw_name] = sw
+        sw.MasterArbitrationUpdate()
+        sw.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
+                                       tofino_bin=tofino_bin_path,
+                                       cxt_json=cxt_json_path)
+
+        print "Installed P4 Program using SetForwardingPipelineConfig on %s" % sw.name
+        print "Installing flows to %s" % sw_name
+
+        flows = sw_info['flows']
+        for flow in flows:
+            try:
+                print "Installing flow %s" % flowStr(flow)
+                installFlow(sw, flow, p4info_helper)
+                print "Installed"
+            except Exception as e:
+                print "Can't install the flow due to: %s" % e
+
+    try:
+        print "Reading table entries every 5 seconds"
+        while True:
+            for sw_name in sws:
+                sw = sws[sw_name]
+                readTableRules(p4info_helper, sw)
+            time.sleep(5)
+    except KeyboardInterrupt:
+        print " Shutting down."
+        for sw_name in sws:
+            sw = sws[sw_name]
+            sw.shutdown()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='P4Runtime Test Tool')
     parser.add_argument('--p4info', help='p4info proto in text format from p4c',
                         type=str, action="store", required=False,
                         default='./target_p4_config/fabric.p4info')
+    parser.add_argument('--target', help='Test target',
+                        type=str, action='store', required=False,
+                        default='bmv2')
     parser.add_argument('--bmv2-json', help='BMv2 JSON file from p4c',
                         type=str, action="store", required=False,
                         default='./target_p4_config/fabric.json')
+    parser.add_argument('--tofino-bin', help='Compiled Tofino binary',
+                        type=str, action="store", required=False,
+                        default='')
+    parser.add_argument('--tofino-ctx-json', help='Compiled Tofino context json',
+                        type=str, action="store", required=False,
+                        default='')
     parser.add_argument('--test-json', help='Test flow entries',
                         type=str, action="store", required=False,
                         default='./test_cases/fabric-l2-unicast.json')
+
     args = parser.parse_args()
 
-    if not os.path.exists(args.p4info):
-        parser.print_help()
-        print "\np4info file not found: %s\nHave you run 'make'?" % args.p4info
-        parser.exit(1)
-    if not os.path.exists(args.bmv2_json):
-        parser.print_help()
-        print "\nBMv2 JSON file not found: %s\nHave you run 'make'?" % args.bmv2_json
-        parser.exit(1)
-    if not os.path.exists(args.test_json):
-        parser.print_help()
-        print "\nTest JSON file not found: %s" % args.test_json
-        parser.exit(1)
+    if (args.target == 'bmv2'):
+        bmv2_test(parser, args.p4info, args.bmv2_json, args.test_json)
 
-    main(args.p4info, args.bmv2_json, args.test_json)
+    if (args.target == 'tofino'):
+        tofino_test(parser, args.p4info, args.tofino_bin, args.tofino_ctx_json,
+                    args.test_json)

@@ -52,6 +52,7 @@ class SwitchConnection(object):
     def MasterArbitrationUpdate(self, dry_run=False, **kwargs):
         request = p4runtime_pb2.StreamMessageRequest()
         request.arbitration.device_id = self.device_id
+        request.arbitration.election_id.high = 0
         request.arbitration.election_id.low = 1
 
         if dry_run:
@@ -63,11 +64,12 @@ class SwitchConnection(object):
         device_config = self.buildDeviceConfig(**kwargs)
         request = p4runtime_pb2.SetForwardingPipelineConfigRequest()
         request.election_id.low = 1
-        config = request.configs.add()
-        config.device_id = self.device_id
+        request.device_id = self.device_id
+        config = request.config
 
         config.p4info.CopyFrom(p4info)
         config.p4_device_config = device_config.SerializeToString()
+
         request.action = p4runtime_pb2.SetForwardingPipelineConfigRequest.VERIFY_AND_COMMIT
         if dry_run:
             print "P4 Runtime SetForwardingPipelineConfig:", request

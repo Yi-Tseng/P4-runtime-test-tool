@@ -1,0 +1,55 @@
+{
+  "leaf1": {
+    "addr": "10.6.0.11:50051",
+    "flows": [
+      {
+        "table_name": "filtering.ingress_port_vlan",
+        "match_fields": {
+          "standard_metadata.ingress_port": 180,
+          "hdr.vlan_tag.is_valid": 0,
+          "hdr.vlan_tag.vlan_id": [0, 0]
+        },
+        "action_name": "filtering.push_internal_vlan",
+        "action_params": {
+          "new_vlan_id": 10
+        },
+        "priority": 100
+      },
+      {
+        "table_name": "filtering.fwd_classifier",
+        "match_fields": {
+          "standard_metadata.ingress_port": 180,
+          "hdr.ethernet.dst_addr": "00:00:00:00:02:04",
+          "fabric_metadata.original_ether_type": 2048
+        },
+        "action_name": "filtering.set_forwarding_type",
+        "action_params": {
+          "fwd_type": 2
+        }
+      },
+      {
+        "table_name": "forwarding.unicast_v4",
+        "match_fields": {
+          "hdr.ipv4.dst_addr": ["10.6.2.0", 24]
+        },
+        "action_name": "forwarding.set_next_id",
+        "action_params": {
+          "next_id": 1
+        }
+      },
+      {
+        "table_name": "next.simple",
+        "match_fields": {
+          "fabric_metadata.next_id": 1
+        },
+        "action_name": "next.mpls_routing_v4",
+        "action_params": {
+          "port_num": 184,
+          "smac": "00:00:00:00:02:04",
+          "dmac": "00:00:00:00:02:27",
+          "label": 205
+        }
+      }
+    ]
+  }
+}
