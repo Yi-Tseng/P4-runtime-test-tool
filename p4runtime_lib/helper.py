@@ -104,13 +104,21 @@ class P4InfoHelper(object):
             exact = p4runtime_match.exact
             exact.value = encode(value, bitwidth)
         elif match_type == p4info_pb2.MatchField.LPM:
-            lpm = p4runtime_match.lpm
-            lpm.value = encode(value[0], bitwidth)
-            lpm.prefix_len = value[1]
+            if value[0] != 0:
+                lpm = p4runtime_match.lpm
+                lpm.value = encode(value[0], bitwidth)
+                lpm.prefix_len = value[1]
+            else:
+                # Invalid representation of 'don't care' LPM match, omit match field instead of using 0 mask
+                return None
         elif match_type == p4info_pb2.MatchField.TERNARY:
-            lpm = p4runtime_match.ternary
-            lpm.value = encode(value[0], bitwidth)
-            lpm.mask = encode(value[1], bitwidth)
+            if value[0] != 0:
+                lpm = p4runtime_match.ternary
+                lpm.value = encode(value[0], bitwidth)
+                lpm.mask = encode(value[1], bitwidth)
+            else:
+                # Invalid representation of 'don't care' ternary match, omit match field instead of using 0 mask
+                return None
         elif match_type == p4info_pb2.MatchField.RANGE:
             lpm = p4runtime_match.range
             lpm.low = encode(value[0], bitwidth)
@@ -173,10 +181,10 @@ class P4InfoHelper(object):
             table_entry.priority = priority
 
         if match_fields:
-            table_entry.match.extend([
-                self.get_match_field_pb(table_name, match_field_name, value)
-                for match_field_name, value in match_fields.iteritems()
-            ])
+            for match_field_name, value in match_fields.iteritems():
+                field = self.get_match_field_pb(table_name, match_field_name, value)
+                if field is not None:
+                    table_entry.match.extend([field])
         if action_name:
             action = table_entry.action.action
             action.action_id = self.get_actions_id(action_name)
